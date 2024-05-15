@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\FoundationHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 class HistoryController extends Controller
 {
@@ -14,11 +16,15 @@ class HistoryController extends Controller
      */
     public function index()
     {
-    $history = FoundationHistory::latest()->first(); // Mengambil satu data FoundationHistory terbaru
-    
-        // Kembalikan view 'carousel.show' dengan data CarouselItem yang ditemukan
-        return view('admin.visitor.history.index', compact('history'));
-    }
+        $response = Http::get('http://localhost:9002/api/history');
+
+        if ($response->successful()) {
+            $history = $response->json();
+            return view('admin.visitor.history.index', compact('history'));
+        } else {
+            return back()->with('error', 'Failed to fetch history from API.');
+            }    
+        }
 
     /**
      * Show the form for creating a new resource.
@@ -34,56 +40,63 @@ class HistoryController extends Controller
     public function store(Request $request)
 {
     // Validasi input form
-    $validatedData = $request->validate([
-        'gambar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-        'sejarah_singkat' => 'required|string',
-        'tujuan_utama' => 'required|string',
-        'dibangun' => 'required|date',
+    $request->validate([
+        'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        'sejarah' => 'required|string',
+        'tujuan' => 'required|string',
+        'dibangun' => 'required|string',
     ]);
 
-    // Proses penyimpanan gambar
-    if ($request->hasFile('gambar')) {
-        $gambar = $request->file('gambar');
+    if ($request->hasFile('image')) {
+        $gambar = $request->file('image');
+        // Menggunakan Str::slug untuk membuat slug dari nama file
         $slug = Str::slug(pathinfo($gambar->getClientOriginalName(), PATHINFO_FILENAME));
+        // Membuat nama file unik dengan timestamp dan slug
         $new_gambar = time() . '_' . $slug . '.' . $gambar->getClientOriginalExtension();
-
-        // Pindahkan gambar ke direktori yang diinginkan
-        $gambar->move('uploads/visitor/history/', $new_gambar);
+        // Menyimpan gambar dengan nama file baru
+        $imagePath = $gambar->storeAs('history', $new_gambar, 'public');
     }
 
-    // Buat instance FoundationHistory dengan data yang disediakan
-    $foundationHistory = new FoundationHistory();
-    $foundationHistory->gambar = 'uploads/visitor/history/' . $new_gambar;
-    $foundationHistory->sejarah_singkat = $validatedData['sejarah_singkat'];
-    $foundationHistory->tujuan_utama = $validatedData['tujuan_utama'];
-    $foundationHistory->dibangun = $validatedData['dibangun'];
+    // Prepare the data for the HTTP request
+    $data = [
+        'sejarah' => $request->input('sejarah'),
+        'tujuan' => $request->input('tujuan'),
+        'dibangun' => $request->input('dibangun'),
+        'image' => $imagePath ?? null, // Assuming the API accepts 'i'
+    ];
 
-    // Simpan instance FoundationHistory ke dalam database
-    $foundationHistory->save();
+    $response = Http::post('http://localhost:9002/api/history', $data);
 
-    // Redirect dengan flash message sukses
-    return redirect()->route('history.index')->with('success', 'Foundation history has been added successfully.');
+    if ($response->successful()) {
+        return redirect()->route('history.index')->with('success', 'promoted created successfully.');
+    } else {
+        // Delete the uploaded image if the request failed
+        if (isset($imagePath)) {
+            Storage::disk('public')->delete($imagePath);
+        }
+        return back()->withInput()->with('error', 'Failed to create promoted. Please try again.');
+    }
 }
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+   /*  public function show(string $id)
     {
         $history = FoundationHistory::find($id);
 
         return view('admin.visitor.history.show', compact('history'));
 
-    }
+    } */
 
     /**
      * Show the form for editing the specified resource.
      */
     public function edit(string $id)
     {
-        $history = FoundationHistory::find($id);
-
-        return view('admin.visitor.history.edit', compact('history'));
+        $response = Http::get("http://localhost:9002/api/history/{$id}");
+        $history = $response->json();
+        return view('admin.Visitor.history.edit', compact('history'));
 
     }
 
@@ -93,41 +106,51 @@ class HistoryController extends Controller
     public function update(Request $request, string $id)
     {
         $request->validate([
-            'gambar' => 'image|mimes:jpeg,png,jpg,gif|max:2048', // Hanya terima file gambar dengan ekstensi tertentu (jpeg, png, jpg, gif) dan maksimal ukuran 2MB
-            'sejarah_singkat' => 'required|string',
-            'tujuan_utama' => 'required|string',
-            'dibangun' => 'required|date',
+            'image' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'sejarah' => 'required|string',
+            'tujuan' => 'required|string',
+            'dibangun' => 'required|string',
         ]);
     
         $history = FoundationHistory::find($id);
     
-
+        $existingHistoryResponse = Http::get("http://localhost:9002/api/history/{$id}");
+        $existingHistory = $existingHistoryResponse->json();
+    
     
         // Update gambar jika ada perubahan
-        if ($request->hasFile('gambar')) {
-            $gambar = $request->file('gambar');
-            $slug = Str::slug(pathinfo($gambar->getClientOriginalName(), PATHINFO_FILENAME));
-            $new_gambar = time() . '_' . $slug . '.' . $gambar->getClientOriginalExtension();
-            
-            $gambar->move('uploads/visitor/history/', $new_gambar);
-
-            if ($history->gambar){
-                if (file_exists(public_path($history->gambar))) {
-                    unlink(public_path($history->gambar));
-                }
+        $imagePath = $existingHistory['image'] ?? null;
+        if ($request->hasFile('image')) {
+            // Delete the previous image if it exists
+            if ($imagePath && Storage::disk('public')->exists($imagePath)) {
+                Storage::disk('public')->delete($imagePath);
             }
-
-            $history->gambar = 'uploads/visitor/history/' . $new_gambar;
-
+    
+            // Upload the new image
+            $image = $request->file('image');
+            $imageName = time() . '_' . Str::slug(pathinfo($image->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $image->getClientOriginalExtension();
+            $imagePath = $image->storeAs('history', $imageName, 'public');
         }
-                // Proses update data
-                $history->sejarah_singkat = $request->sejarah_singkat;
-                $history->tujuan_utama = $request->tujuan_utama;
-                $history->dibangun = $request->dibangun;
+
+        $data = [
+            'sejarah' => $request->input('sejarah'),
+            'tujuan' => $request->input('tujuan'),
+            'dibangun' => $request->input('dibangun'),
+            'image' => $imagePath ?? $existingHistory['image'], // Assuming the API accepts 'i'
+        ];
+
+        // Send the updated data via HTTP request
+        $response = Http::put("http://localhost:9002/api/history/{$id}", $data);
     
-        $history->save();
-    
-        return redirect()->route('history.index')->with('success', 'Foundation history updated successfully.');
+        if ($response->successful()) {
+            return redirect()->route('history.index')->with('success', 'Carousel updated successfully.');
+        } else {
+            // If the request failed, delete the uploaded image
+            if ($request->hasFile('image') && $imagePath) {
+                Storage::disk('public')->delete($imagePath);
+            }
+            return back()->withInput()->with('error', 'Failed to update carousel. Please try again.');
+        }
     }
 
     /**
@@ -135,20 +158,27 @@ class HistoryController extends Controller
      */
     public function destroy($id)
     {
-        // Temukan CarouselItem berdasarkan ID
-        $history = FoundationHistory::find($id);
-    
-        if ($history->gambar) {
-            if (file_exists(public_path($history->gambar))) {
-                unlink(public_path($history->gambar));
-        }
-        // Hapus history dari database
-        $history->delete();
-    
-        return redirect()->route('history.index')
-                         ->with('success', 'Carousel item deleted successfully.');
+         // Retrieve the existing promoted to get the image path
+         $existinghistoryResponse = Http::get("http://localhost:9002/api/history/{$id}");
+         $existinghistory = $existinghistoryResponse->json();
 
-    }
+         // Get the image path from the existing history data
+         $imagePath = $existinghistory['image'] ?? null;
+
+         // If the image path exists and the image file exists in storage, delete it
+         if ($imagePath && Storage::disk('public')->exists($imagePath)) {
+             Storage::disk('public')->delete($imagePath);
+         }
+
+         // Make the HTTP request to delete the history
+         $response = Http::delete("http://localhost:9002/api/history/{$id}");
+
+         if ($response->successful()) {
+             return redirect()->route('history.index')->with('success', 'history deleted successfully.');
+         } else {
+             return back()->with('error', 'Failed to delete history. Please try again.');
+         }
+         }
 
 
         
@@ -156,4 +186,4 @@ class HistoryController extends Controller
 
 
 
-}
+

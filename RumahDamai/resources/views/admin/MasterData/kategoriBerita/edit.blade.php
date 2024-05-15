@@ -15,13 +15,13 @@
             </div>
         @endif
 
-        <form action="{{ route('kategoriBerita.update', $kategoriList->id) }}" method="post">
+        <form action="{{ route('kategoriBerita.update', $categories['ID']) }}" method="post">
             @csrf
             @method('PUT')
 
             <div class="form-group">
-                <label for="kategori">Nama Kategori Berita</label>
-                <input type="text" class="form-control" name="kategori" value="{{ old('kategori', $kategoriList->kategori) }}">
+                <label for="name">Nama Kategori Berita</label>
+                <input type="text" class="form-control" name="name" value="{{ old('name', $categories['name']) }}">
             </div>
 
             <a href="{{ url()->previous() }}" class="btn btn-primary">Batal</a>

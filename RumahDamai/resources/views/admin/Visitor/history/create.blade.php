@@ -11,26 +11,26 @@
                 @csrf
 
                 <div class="mb-3">
-                    <label for="gambar" class="form-label">Image</label>
-                    <input type="file" class="form-control" id="gambar" name="gambar" accept="image/*" required>
+                    <label for="image" class="form-label">Image</label>
+                    <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
                 </div>
 
                 <!-- Input untuk sejarah singkat -->
                 <div class="mb-3">
-                    <label for="sejarah_singkat" class="form-label">Sejarah Singkat</label>
-                    <textarea class="form-control" id="sejarah_singkat" name="sejarah_singkat" rows="5" placeholder="Enter brief history" maxlength="255" required></textarea>
+                    <label for="sejarah" class="form-label">Sejarah Singkat</label>
+                    <textarea class="form-control" id="sejarah" name="sejarah" rows="5" placeholder="Enter brief history" maxlength="255" required></textarea>
                 </div>
                 
                 <!-- Input untuk tujuan utama -->
                 <div class="mb-3">
-                    <label for="tujuan_utama" class="form-label">Tujuan Utama</label>
-                    <textarea class="form-control" id="tujuan_utama" name="tujuan_utama" rows="5" placeholder="Enter main purpose" maxlength="255" required></textarea>
+                    <label for="tujuan" class="form-label">Tujuan Utama</label>
+                    <textarea class="form-control" id="tujuan" name="tujuan" rows="5" placeholder="Enter main purpose" maxlength="255" required></textarea>
                 </div>
 
                 <!-- Input untuk tanggal pendirian -->
                 <div class="mb-3">
                     <label for="dibangun" class="form-label">Dibangun</label>
-                    <input type="date" class="form-control" id="dibangun" name="dibangun" required>
+                    <input type="text" class="form-control" id="dibangun" name="dibangun" required>
                 </div>
 
                 <!-- Tombol untuk submit form -->

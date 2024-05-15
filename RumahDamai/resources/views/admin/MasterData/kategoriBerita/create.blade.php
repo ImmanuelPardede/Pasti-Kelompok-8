@@ -19,8 +19,8 @@
             @csrf
 
             <div class="form-group">
-                <label for="kategori">Nama Kategori Berita</label>
-                <input type="text" class="form-control" name="kategori" value="{{ old('kategori') }}">
+                <label for="name">Nama  Berita</label>
+                <input type="text" class="form-control" name="name">
             </div>
 
             <a href="{{ url()->previous() }}" class="btn btn-primary">Batal</a>

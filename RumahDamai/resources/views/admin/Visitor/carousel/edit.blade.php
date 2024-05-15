@@ -7,34 +7,34 @@
             <h1 class="card-title">Edit Carousel Item</h1>
 
             <!-- Form untuk mengupdate carousel item -->
-            <form method="POST" action="{{ route('carousel.update', $carousel->id) }}" enctype="multipart/form-data">
+            <form method="POST" action="{{ route('carousel.update', $carousel['ID']) }}" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 
                 <!-- Input untuk caption -->
                 <div class="mb-3">
-                    <label for="caption" class="form-label">Caption</label>
-                    <input type="text" class="form-control" id="caption" name="caption" value="{{ $carousel->caption }}" placeholder="Enter caption" maxlength="50">
+                    <label for="title" class="form-label">title</label>
+                    <input type="text" class="form-control" id="title" name="title" value="{{ $carousel['title'] }}" placeholder="Enter caption" maxlength="50">
                 </div>
 
                 <!-- Input untuk subcaption -->
                 <div class="mb-3">
-                    <label for="subcaption" class="form-label">Subcaption (Max 50 characters)</label>
-                    <input type="text" class="form-control" id="subcaption" name="subcaption" value="{{ $carousel->subcaption }}" placeholder="Enter subcaption" maxlength="52">
+                    <label for="subtitle" class="form-label">subtitle (Max 50 characters)</label>
+                    <input type="text" class="form-control" id="subtitle" name="subtitle" value="{{ $carousel['subtitle'] }}" placeholder="Enter subcaption" maxlength="52">
                 </div>
                 
 
                 <!-- Input untuk gambar -->
                 <div class="mb-3">
-                    <label for="image_url" class="form-label">New Image</label>
-                    <input type="file" class="form-control" id="image_url" name="image_url" accept="image/*">
+                    <label for="image" class="form-label">New Image</label>
+                    <input type="file" class="form-control" id="image" name="image" accept="image/*">
                 </div>
 
                 <!-- Tampilkan gambar saat ini -->
-                @if ($carousel->image_url)
+                @if (isset($image['image']))
                     <div class="mb-3">
                         <label for="current_image" class="form-label">Current Image</label>
-                        <img src="{{ asset($carousel->image_url) }}" alt="Current Image" style="max-width: 300px;">
+                        <img src="{{ Storage::url($carousel['image']) }}" alt="{{ $carousel['title'] }}" style="max-width: 300px;">
                     </div>
                 @endif
 

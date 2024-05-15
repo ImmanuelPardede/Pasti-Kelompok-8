@@ -24,7 +24,7 @@ use App\Http\Controllers\Admin\TipeAnak\AnakNonDisabilitasController;
 use App\Http\Controllers\Admin\Pendidikan\KelasController;
 use App\Http\Controllers\Admin\Visitor\AboutController;
 use App\Http\Controllers\Admin\Visitor\BeritaController;
-use App\Http\Controllers\Admin\Visitor\CarouselItemController;
+use App\Http\Controllers\Admin\Visitor\CarouselController;
 use App\Http\Controllers\Admin\Visitor\FasilitasController;
 use App\Http\Controllers\Admin\Visitor\GaleriController;
 use App\Http\Controllers\Admin\Visitor\HistoryController;
@@ -252,7 +252,7 @@ Route::middleware(['auth', 'user-access:admin'])->group(function () {
     | Visitor
     |--------------------------------------------------------------------------
     */
-    Route::resource('carousel', CarouselItemController::class);
+    Route::resource('carousel', CarouselController::class);
     Route::resource('history', HistoryController::class);
     Route::resource('about', AboutController::class);
     Route::resource('program', ProgramController::class);
