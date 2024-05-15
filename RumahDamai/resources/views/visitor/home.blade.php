@@ -10,13 +10,21 @@
                     <div class="carousel-inner">
                         @foreach($carousel as $item)
                         <div class="carousel-item {{ $loop->first ? 'active' : '' }}">
-                            <img src="{{ asset($item->image_url) }}" class="carousel-image img-fluid" alt="...">
+                            @if(isset($item['image']))
+                    <img src="{{ Storage::url($item['image']) }}" class="carousel-image img-fluid">
+                @endif
                             <div class="carousel-caption d-flex flex-column justify-content-end">
-                                <h1>{{ $item->caption }}</h1>
-                                <p>{{ $item->subcaption }}</p>
+                                <h1>{{ $item['title'] }}</h1>
+                                <p>{{ $item['subtitle'] }}</p>
                             </div>
                         </div>
                         @endforeach
+
+
+
+
+
+
                     </div>
                     @if(count($carousel) > 1)
                     <button class="carousel-control-prev" type="button" data-bs-target="#hero-slide" data-bs-slide="prev">
@@ -95,10 +103,12 @@
 <section class="section-padding section-bg" id="section_2">
     <div class="container">
         <div class="row">
-            @foreach($history as $item)
+            @foreach($history as $oke)
             <div class="col-lg-6 col-12 mb-5 mb-lg-0">
-                <img src="{{ asset($item->gambar) }}"
-                    class="custom-text-box-image img-fluid cursor-pointer img-with-shadow" alt="">
+                    @if(isset($oke['image']))
+                    <img src="{{ Storage::url($oke['image']) }}" class="custom-text-box-image img-fluid cursor-pointer img-with-shadow">
+                @endif
+
             </div>
 
             <div class="col-lg-6 col-12">
@@ -107,7 +117,7 @@
 
                     <h5 class="mb-3">Yayasan Pendidikan Anak Rumah Damai</h5>
 
-                    <p class="mb-0">{{ $item->sejarah_singkat }}</p>
+                    <p class="mb-0">{{$oke['sejarah']}}</p>
                 </div>
 
                 <div class="row">
@@ -115,7 +125,7 @@
                         <div class="custom-text-box mb-lg-0 cursor-pointer img-with-shadow">
                             <h5 class="mb-3">Tujuan Utama Kami</h5>
 
-                            <p>{{ $item->tujuan_utama }}</p>
+                            <p>{{ $oke['tujuan']}}</p>
                         </div>
                     </div>
 
@@ -123,11 +133,7 @@
                         <div class="custom-text-box d-flex flex-wrap d-lg-block mb-lg-0 cursor-pointer img-with-shadow">
                             <div class="counter-thumb">
                                 <div class="d-flex">
-                                    @php
-                                        $dibangunDate = \Illuminate\Support\Carbon::createFromFormat('Y-m-d', $item->dibangun);
-                                        $formattedYear = $dibangunDate ? $dibangunDate->format('Y') : '';
-                                    @endphp
-                                    <span class="counter-number" data-from="1" data-to="{{ $formattedYear }}" data-speed="1000"></span>
+                                    <span class="counter-number" >{{ $oke['dibangun'] }}</span>
                                     <span class="counter-number-text"></span>
                                 </div>
                                 
@@ -135,15 +141,6 @@
                                 <span class="counter-text">Dibuat</span>
                             </div>
 
-                            <div class="counter-thumb mt-4">
-                                <div class="d-flex">
-                                    <span class="counter-number" data-from="1" data-to="{{ $totalAnak }}" data-speed="1000"></span>
-                                    <span class="counter-number-text"></span>
-                                </div>
-                                
-
-                                <span class="counter-text">Total Siswa</span>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -160,28 +157,27 @@
                 <h2>Berita Terkini</h2>
             </div>
 
-            @if($berita->isEmpty())
-                <div class="col-12">
-                    <h1><strong>Tidak Ada Berita!!</strong>. Admin masih ngantuk, tolong sadarkan</h1>
-                </div>
-            @else
                 <div class="col-lg-7 col-12">
                     <div class="news-block">
-
-                        @php
-                        $beritas = $berita->sortByDesc('created_at')->take(2);
-                    @endphp
-                        @foreach($beritas as $item)
+                        @foreach($berita as $item)
                             <div class="news-block-top">
-                                <a href="{{ route('news.detail', ['id' => $item->id]) }}">
-                                    <img src="{{ asset($item->img_berita) }}" class="news-image img-fluid" alt="">
-                                </a>
+                                <a href="{{ route('news.detail', ['id' => $item['ID']]) }}">
+                                    @if(isset($item['image']))
+                                    <img src="{{ Storage::url($item['image']) }}" class="news-image img-fluid">
+                                @endif                                </a>
 
-                                <div class="news-category-block">
-                                    <a href="{{ route('news.detail', ['id' => $item->id]) }}" class="category-block-link">
-                                        {{$item->kategori->kategori }}
+
+            
+
+                               <div class="news-category-block">
+                                    <a href="{{ route('news.detail', ['id' => $item['ID']]) }}" class="category-block-link">
+                                        @foreach($category as $key => $value)
+                                        {{$value['name'] }}
+                                            
+                                        @endforeach
+
                                     </a>
-                                </div>
+                                </div> 
                             </div>
 
                             <div class="news-block-info">
@@ -189,13 +185,13 @@
                                     <div class="news-block-date">
                                         <p>
                                             <i class="bi-calendar4 custom-icon me-1"></i>
-                                            {{$item->created_at }}
+                                            {{ date('Y-m-d', strtotime($item['UpdatedAt'])) }}
                                         </p>
                                     </div>
                                 </div>
 
                                 <div class="news-block-title mb-2">
-                                    <h4><a href="{{ route('news.detail', ['id' => $item->id]) }}" class="news-block-title-link">{{$item->judul }}</a></h4>
+                                    <h4><a href="{{ route('news.detail', ['id' => $item['ID']]) }}" class="news-block-title-link">{{$item['judul'] }}</a></h4>
                                 </div>
                             </div>
                             <hr>
@@ -215,40 +211,40 @@
                     @foreach($berita as $item)
                         <div class="news-block news-block-two-col d-flex mt-4">
                             <div class="news-block-two-col-image-wrap">
-                                <a href="{{ route('news.detail', ['id' => $item->id]) }}">
-                                    <img src="{{ asset($item->img_berita) }}" class="news-image img-fluid" alt="">
+                                <a href="{{ route('news.detail', ['id' => $item['ID']]) }}">
+                                    @if(isset($item['image']))
+                                    <img src="{{ Storage::url($item['image']) }}" class="news-image img-fluid">
+                                @endif  
                                 </a>
                             </div>
 
                             <div class="news-block-two-col-info">
                                 <div class="news-block-title mb-2">
-                                    <h6><a href="{{ route('news.detail', ['id' => $item->id]) }}" class="news-block-title-link">{{$item->judul}}</a></h6>
+                                    <h6><a href="{{ route('news.detail', ['id' => $item['ID']]) }}" class="news-block-title-link">{{$item['judul']}}</a></h6>
                                 </div>
 
                                 <div class="news-block-date">
                                     <p>
                                         <i class="bi-calendar4 custom-icon me-1"></i>
-                                        {{$item->created_at }}
-                                    </p>
+                                        {{ date('Y-m-d', strtotime($item['UpdatedAt'])) }}
+                                   
+</p>
                                 </div>
                             </div>
                         </div>
                     @endforeach
 
-                    <div class="tags-block">
+                     <div class="tags-block">
                         <h5 class="mb-3">Kategori</h5>
-                        @foreach($kategori as $item)
-                            @php
-                                $jumlah_berita = $berita->where('kategori_id', $item->id)->count();
-                            @endphp
-                            <a class="tags-block-link" disabled>
-                                {{ $item->kategori }}
-                                <span class="badge">{{ $jumlah_berita }}</span>
-                            </a>
-                        @endforeach
-                    </div>
+                        @foreach($category as $item)
+                        
+                        <a class="tags-block-link" disabled>
+                            {{ $item['name'] }}
+                        </a>
+                    @endforeach
+                    
+                    </div> 
                 </div>
-            @endif
         </div>
     </div>
 </section>

@@ -24,17 +24,17 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse ($kategoriList as $kategori)
+                            @forelse ($categories as $kategori)
                                 <tr>
-                                    <td>{{ $kategori->kategori }}</td>
+                                    <td>{{ $kategori['name'] }}</td>
                                     <td>
-                                        <a href="{{ route('kategoriBerita.edit', $kategori->id) }}" class="btn btn-warning">Edit</a>
-                                        <form method="POST" id="deleteForm{{ $kategori->id }}" class="d-inline"
-                                            action="{{ route('kategoriBerita.destroy', $kategori->id) }}">
+                                        <a href="{{ route('kategoriBerita.edit', $kategori['ID']) }}" class="btn btn-warning">Edit</a>
+                                        <form method="POST" id="deleteForm{{ $kategori['ID'] }}" class="d-inline"
+                                            action="{{ route('kategoriBerita.destroy', $kategori['ID']) }}">
                                             @csrf
                                             @method('DELETE')
                                             <button type="button" class="btn btn-danger"
-                                                onclick="handleDeleteConfirmation('deleteForm{{ $kategori->id }}')">
+                                                onclick="handleDeleteConfirmation('deleteForm{{ $kategori['ID'] }}')">
                                                 Hapus
                                             </button>
                                         </form>
@@ -48,9 +48,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="d-flex justify-content-end">
-                    {{ $kategoriList->links('pagination::bootstrap-4') }}
-                </div>
+         
             </div>
         </div>
     </div>

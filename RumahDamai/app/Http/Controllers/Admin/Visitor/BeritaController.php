@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Admin\Visitor;
 
 use App\Http\Controllers\Controller;
-use App\Models\Berita;
-use App\Models\KategoriBerita;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage; // Import the Storage facade
+
 
 class BeritaController extends Controller
 {
@@ -15,19 +16,41 @@ class BeritaController extends Controller
      */
     public function index()
     {
-        $berita = Berita::all(); // Mengambil satu data Foundationabouts terbaru
+        $response = Http::get('http://localhost:9003/api/category');
+        $categories = collect($response->json())->map(function ($category) {
+            return [
+                'id' => $category['ID'],
+                'name' => $category['name'] // Menggunakan kunci 'name' dari respons JSON
+            ];
+        })->toArray();
     
-        // Kembalikan view 'berita.show' dengan data beritaItem yang ditemukan
-        return view('admin.visitor.berita.index', compact('berita'));
+        $response = Http::get('http://localhost:9004/api/news');
+    
+        if ($response->successful()) {
+            $berita = $response->json();
+            return view('admin.visitor.berita.index', compact('berita', 'categories'));
+        } else {
+            return back()->with('error', 'Failed to fetch products from API.');
+        }
     }
+    
 
     /**
      * Show the form for creating a new resource.
      */
     public function create()
     {
-        $kategori = KategoriBerita::all();
-        return view('admin.visitor.berita.create', compact('kategori'));
+        $response = Http::get('http://localhost:9003/api/category');
+        $category = collect($response->json())->map(function ($category) {
+            return [
+                'id' => $category['ID'],
+                'name' => $category['name']
+            ];
+        })->toArray();
+
+        return view('admin.visitor.berita.create', compact('category'));
+
+       
     }
 
     /**
@@ -36,47 +59,63 @@ class BeritaController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'img_berita' => 'required|image|mimes:jpeg,png,jpg|max:2048',
-            'kategori_id' => 'required',
+            'image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'category_id' => 'required',
             'judul' => 'required',
             'deskripsi' => 'required',
         ]);
     
-    
-         // Mengelola upload foto profil
-         if ($request->hasFile('img_berita')) {
-            $gambar = $request->file('img_berita');
-            $slug = Str::slug(pathinfo($gambar->getClientOriginalName(), PATHINFO_FILENAME));
-            $new_gambar = time() . '_' . $slug . '.' . $gambar->getClientOriginalExtension();
-    
-            // Pindahkan gambar ke direktori yang diinginkan (storage/app/public/uploads/berita/)
-            $gambar->move('uploads/visitor/berita/', $new_gambar);
-    
-            // Buat instance beritaItem dengan data yang disediakan
-            $berita = new Berita([
-                'judul' => $request->judul,
-                'deskripsi' => $request->deskripsi,
-                'kategori_id' => $request->kategori_id,
-                'img_berita' => 'uploads/visitor/berita/' . $new_gambar, // Set nilai img_berita
-            ]);
-    
-            // Simpan instance beritaItem ke dalam database
-            $berita->save();
-    
-            return redirect()->route('berita.index')
-                             ->with('success', 'berita item created successfully.');
+        $category_id = (int) $request->input('category_id');
+
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            // Get the sanitized brand name
+            $brandName = preg_replace('/[^a-zA-Z0-9]/', '', $request->input('name'));
+            // Generate a unique filename using brand name and timestamp
+            $imageName = $brandName . '_' . time() . '.' . $image->getClientOriginalExtension();
+            // Store the image with the generated filename
+            $imagePath = $image->storeAs('news', $imageName, 'public');
         }
-    
-        // Jika tidak ada file yang diunggah, tampilkan pesan error
-        return redirect()->route('berita.create')
-                         ->with('error', 'Failed to upload image.');
+
+        // Prepare the data for the HTTP request
+        $data = [
+            'judul' => $request->input('judul'),
+            'deskripsi' => $request->input('deskripsi'),
+            'category_id' => $category_id,
+            'image' => $imagePath ?? null,
+        ];
+
+        $response = Http::post('http://localhost:9004/api/news', $data);
+
+        if ($response->successful()) {
+            return redirect()->route('berita.index')->with('success', 'Product created successfully.');
+        } else {
+            return back()->withInput()->with('error', 'Failed to create product. Please try again.');
+        }
+
+        
     }
     /**
      * Display the specified resource.
      */
     public function show(string $id)
     {
-        //
+        $response = Http::get('http://localhost:9003/api/category');
+        $categories = collect($response->json())->map(function ($category) {
+            return [
+                'id' => $category['ID'],
+                'name' => $category['name'] // Menggunakan kunci 'name' dari respons JSON
+            ];
+        })->toArray();
+
+        $response = Http::get("http://localhost:9004/api/news/{$id}");
+        if ($response->successful()) {
+            $berita = $response->json();
+
+            return view('admin.visitor.berita.show', compact('berita', 'categories'));
+        } else {
+            return back()->with('error', 'Failed to fetch products from API.');
+        }
     }
 
     /**
@@ -84,15 +123,24 @@ class BeritaController extends Controller
      */
     public function edit($id)
     {
-        // Temukan berita berdasarkan ID
-        $berita = Berita::findOrFail($id);
+        $response = Http::get('http://localhost:9003/api/category');
+        $categories = collect($response->json())->map(function ($category) {
+            return [
+                'id' => $category['ID'],
+                'name' => $category['name'] // Menggunakan kunci 'name' dari respons JSON
+            ];
+        })->toArray();
+        
+        $response = Http::get("http://localhost:9004/api/news/{$id}");
     
-        // Ambil daftar kategori berita
-        $kategori = KategoriBerita::all();
-    
-        // Tampilkan halaman edit berita dengan data yang ditemukan
-        return view('admin.visitor.berita.edit', compact('berita', 'kategori'));
-    }
+        if ($response->successful()) {
+            $berita = $response->json();
+            return view('admin.visitor.berita.edit', compact('berita', 'categories'));
+        } else {
+            return back()->with('error', 'Failed to fetch products from API.');
+        }
+
+        }
     
 
     /**
@@ -101,60 +149,80 @@ class BeritaController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'kategori_id' => 'required',
+            'image' => 'image|mimes:jpeg,png,jpg|max:2048',
+            'category_id' => 'required',
             'judul' => 'required',
             'deskripsi' => 'required',
         ]);
     
+ // Retrieve the existing product to get the current image path
+ $existingNewsResponse = Http::get("http://localhost:9004/api/news/{$id}");
+ $existingNews = $existingNewsResponse->json();
+
+
         // Temukan berita berdasarkan ID
-        $berita = Berita::findOrFail($id);
-    
-        // Perbarui data berita sesuai dengan data yang dikirimkan
-        $berita->kategori_id = $request->kategori_id;
-        $berita->judul = $request->judul;
-        $berita->deskripsi = $request->deskripsi;
-    
-        // Mengelola update gambar berita
-        if ($request->hasFile('img_berita')) {
-            $gambar = $request->file('img_berita');
-            $slug = Str::slug(pathinfo($gambar->getClientOriginalName(), PATHINFO_FILENAME));
-            $new_gambar = time() . '_' . $slug . '.' . $gambar->getClientOriginalExtension();
-    
-            // Pindahkan gambar ke direktori yang diinginkan (storage/app/public/uploads/berita/)
-            $gambar->move('uploads/visitor/berita/', $new_gambar);
-    
-            // Hapus gambar lama jika ada
-            if (file_exists(public_path($berita->img_berita))) {
-                unlink(public_path($berita->img_berita));
-            }
-    
-            // Set gambar baru ke dalam atribut img_berita
-            $berita->img_berita = 'uploads/visitor/berita/' . $new_gambar;
+       // Handle the image upload
+    $imagePath = $existingNews['image'] ?? null;
+    if ($request->hasFile('image')) {
+        // Delete the old image if it exists
+        if ($imagePath && Storage::disk('public')->exists($imagePath)) {
+            Storage::disk('public')->delete($imagePath);
         }
-    
-        // Simpan perubahan pada berita
-        $berita->save();
-    
-        // Redirect ke halaman index dengan pesan sukses
-        return redirect()->route('berita.index')
-                         ->with('success', 'Berita item updated successfully.');
+
+        $image = $request->file('image');
+        $imageName = time() . '.' . $image->getClientOriginalExtension();
+        $imagePath = $image->storeAs('news', $imageName, 'public');
+    }
+
+    $category_id = (int) $request->input('category_id');
+
+    // Prepare the data for the HTTP request
+    $data = [
+        'judul' => $request->input('judul'),
+        'deskripsi' => $request->input('deskripsi'),
+        'category_id' => $category_id,
+        'image' => $request->hasFile('image') ? $imagePath : $existingNews['image'],
+    ];
+
+    $response = Http::put("http://localhost:9004/api/news/{$id}", $data);
+
+    if ($response->successful()) {
+        return redirect()->route('berita.index')->with('success', 'Product updated successfully.');
+    } else {
+        // Delete the uploaded image if the request failed
+        if ($request->hasFile('image') && $imagePath) {
+            Storage::disk('public')->delete($imagePath);
+        }
+        return back()->withInput()->with('error', 'Failed to update product. Please try again.');
+    }
+
+        
     }
     
 
     public function destroy($id)
     {
-        // Temukan CarouselItem berdasarkan ID
-        $berita = Berita::findOrFail($id);
+   // Retrieve the existing promoted to get the image path
+   $existingnewsResponse = Http::get("http://localhost:9004/api/news/{$id}");
+   $existingnews = $existingnewsResponse->json();
+
+   // Get the image path from the existing news data
+   $imagePath = $existingnews['image'] ?? null;
+
+   // If the image path exists and the image file exists in storage, delete it
+   if ($imagePath && Storage::disk('public')->exists($imagePath)) {
+       Storage::disk('public')->delete($imagePath);
+   }
+
+   // Make the HTTP request to delete the news
+   $response = Http::delete("http://localhost:9004/api/news/{$id}");
+
+   if ($response->successful()) {
+       return redirect()->route('berita.index')->with('success', 'news deleted successfully.');
+   } else {
+       return back()->with('error', 'Failed to delete news. Please try again.');
+   }
+   }
     
-        if ($berita->img_berita) {
-            if (file_exists(public_path($berita->img_berita))) {
-                unlink(public_path($berita->img_berita));
-        }
-        $berita->delete();
     
-        return redirect()->route('berita.index')->with('success', 'Carousel item deleted successfully.');
     }
-    
-    
-    }
-}

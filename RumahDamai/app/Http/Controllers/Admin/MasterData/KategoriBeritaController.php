@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin\MasterData;
 use App\Http\Controllers\Controller;
 use App\Models\KategoriBerita;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+
 
 class KategoriBeritaController extends Controller
 {
@@ -13,8 +15,13 @@ class KategoriBeritaController extends Controller
      */
     public function index()
     {
-        $kategoriList = KategoriBerita::orderBy('kategori', 'asc')->paginate(7);
-        return view('admin.masterdata.kategoriBerita.index', compact('kategoriList'));
+
+        $response = Http::get('http://localhost:9003/api/category');
+        $categories = $response->json();
+
+        return view('admin.masterdata.kategoriBerita.index', compact('categories'));
+
+        
     }
 
     /**
@@ -30,13 +37,27 @@ class KategoriBeritaController extends Controller
      */
     public function store(Request $request)
     {
+
         $request->validate([
-            'kategori' => 'required|string',
+            'name' => 'required|string|max:255', // Contoh validasi untuk nama kategori
+            // Tambahkan validasi untuk field lain jika ada
+        ]);
+    
+        // Kirim data ke API untuk membuat kategori baru
+        $response = Http::post('http://localhost:9003/api/category', [
+            'name' => $request->input('name'),
+            // Tambahkan field lain sesuai kebutuhan
         ]);
 
-        KategoriBerita::create($request->all());
+        if ($response->successful()) {
+            // Jika sukses, redirect ke halaman daftar kategori dengan pesan sukses
+            return redirect()->route('kategoriBerita.index')->with('success', 'Category created successfully.');
+        } else {
+            // Jika gagal, kembalikan ke halaman pembuatan kategori dengan pesan error
+            return back()->withInput()->with('error', 'Failed to create category. Please try again.');
+        }
 
-        return redirect()->route('kategoriBerita.index')->with('success', 'Data Kategori Berita berhasil ditambahkan.');
+        
     }
 
     /**
@@ -44,8 +65,8 @@ class KategoriBeritaController extends Controller
      */
     public function show(string $id)
     {
-        $kategoriList = KategoriBerita::find($id);
-        return view('admin.masterdata.kategoriBerita.show', compact('kategoriList'));
+     /*    $kategoriList = KategoriBerita::find($id);
+        return view('admin.masterdata.kategoriBerita.show', compact('kategoriList')); */
     }
 
     /**
@@ -53,8 +74,10 @@ class KategoriBeritaController extends Controller
      */
     public function edit(string $id)
     {
-        $kategoriList = KategoriBerita::find($id);
-        return view('admin.masterdata.kategoriBerita.edit', compact('kategoriList'));
+        $response = Http::get("http://localhost:9003/api/category/{$id}");
+        $categories = $response->json();
+
+        return view('admin.masterdata.kategoriBerita.edit', compact('categories'));
     }
 
     /**
@@ -63,13 +86,24 @@ class KategoriBeritaController extends Controller
     public function update(Request $request, string $id)
     {
         $request->validate([
-            'kategori' => 'required|string',
+            'name' => 'required|string|max:255', // Contoh validasi untuk nama kategori
+            // Tambahkan validasi untuk field lain jika ada
+        ]);
+    
+        // Kirim data ke API untuk mengupdate kategori
+        $response = Http::put("http://localhost:9003/api/category/{$id}", [
+            'name' => $request->input('name'),
+            // Tambahkan field lain sesuai kebutuhan
         ]);
 
-        $kategori = KategoriBerita::find($id);
-        $kategori->update($request->all());
-
-        return redirect()->route('kategoriBerita.index')->with('success', 'Data Kategori Berita berhasil diperbarui.');
+         // Periksa jika respons dari API adalah sukses atau tidak
+         if ($response->successful()) {
+            // Jika sukses, redirect ke halaman daftar kategori dengan pesan sukses
+            return redirect()->route('kategoriBerita.index')->with('success', 'Category updated successfully.');
+        } else {
+            // Jika gagal, kembalikan ke halaman pembuatan kategori dengan pesan error
+            return back()->withInput()->with('error', 'Failed to update category. Please try again.');
+        }
     }
 
     /**
@@ -77,10 +111,16 @@ class KategoriBeritaController extends Controller
      */
     public function destroy(string $id)
     {
-        $kategori = KategoriBerita::find($id);
-        $kategori->delete();
-
-        return redirect()->route('kategoriBerita.index')->with('success', 'Data Kategori Berita berhasil dihapus.');
-        
+        $response = Http::delete("http://localhost:9003/api/category/{$id}");
+    
+        // Periksa jika respons dari API adalah sukses atau tidak
+        if ($response->successful()) {
+            // Jika sukses, redirect ke halaman daftar kategori dengan pesan sukses
+            return redirect()->route('kategoriBerita.index')->with('success', 'Category deleted successfully.');
+        } else {
+            // Jika gagal, kembalikan ke halaman daftar kategori dengan pesan error
+            return back()->with('error', 'Failed to delete category. Please try again.');
+        }
+    
     }
 }

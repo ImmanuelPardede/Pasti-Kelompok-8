@@ -24,11 +24,12 @@
             <div class="col-lg-7 col-12">
                 <div class="news-block">
                     <div class="news-block-top">
-                        <img src="{{ asset($berita->img_berita) }}" class="news-image img-fluid" alt="">
-
+                        @if(isset($berita['image']))
+                                    <img src="{{ Storage::url($berita['image']) }}" class="news-image img-fluid">
+                                @endif  
                         <div class="news-category-block">
-                            <a href="#" class="category-block-link">{{ $berita->kategori->kategori }}</a>
-                        </div>
+{{--                             <a href="#" class="category-block-link">{{ $category['name'] }}</a>
+ --}}                        </div>
                     </div>
 
                     <div class="news-block-info">
@@ -36,7 +37,8 @@
                             <div class="news-block-date">
                                 <p>
                                     <i class="bi-calendar4 custom-icon me-1"></i>
-                                    {{ $berita->created_at }}                                </p>
+                                    {{ date('Y-m-d', strtotime($berita['UpdatedAt'])) }}                                
+                                </p>
                             </div>
 
                             <div class="news-block-author mx-5">
@@ -48,11 +50,11 @@
                         </div>
 
                         <div class="news-block-title mb-2">
-                            <h4>{{ $berita->judul }}</h4>
+                            <h4>{{ $berita['judul'] }}</h4>
                         </div>
 
                         <div class="news-block-body">
-                            <p>{!! $berita->deskripsi !!}</p>
+                            <p>{!! $berita['deskripsi'] !!}</p>
                         </div>
                     </div>
                 </div>
@@ -72,20 +74,22 @@
                 @foreach ($recentNews as $item)
                 <div class="news-block news-block-two-col d-flex mt-4">
                     <div class="news-block-two-col-image-wrap">
-                        <a href="{{ route('news.detail', ['id' => $item->id]) }}">
-                            <img src="{{ asset($item->img_berita) }}" class="news-image img-fluid" alt="">
+                        <a href="{{ route('news.detail', ['id' => $item['ID']]) }}">
+                            @if(isset($item['image']))
+                            <img src="{{ Storage::url($item['image']) }}" class="news-image img-fluid">
+                        @endif  
                         </a>
                     </div>
 
                     <div class="news-block-two-col-info">
                         <div class="news-block-title mb-2">
-                            <h6><a href="{{ route('news.detail', ['id' => $item->id]) }}" class="news-block-title-link">{{ $item->judul }}</a></h6>
+                            <h6><a href="{{ route('news.detail', ['id' => $item['ID']]) }}" class="news-block-title-link">{{ $item['judul'] }}</a></h6>
                         </div>
 
                         <div class="news-block-date">
                             <p>
                                 <i class="bi-calendar4 custom-icon me-1"></i>
-                                {{ $item->created_at }}
+                                {{ date('Y-m-d', strtotime($item['UpdatedAt'])) }}                                
                             </p>
                         </div>
                     </div>
@@ -94,14 +98,9 @@
 
                 <div class="tags-block">
                     <h5 class="mb-3">Tags</h5>
-                    @foreach($kategori as $item)
-                    @php
-                        // Menghitung jumlah berita yang memiliki kategori_id yang sesuai
-                        $jumlah_berita = $berita->where('kategori_id', $item->id)->count();
-                    @endphp
+                    @foreach($category as $item)
                     <a href="#" class="tags-block-link">
-                        {{ $item->kategori }}
-                        <span class="badge">{{ $jumlah_berita }}</span>
+                        {{ $item['name'] }}
                     </a>
                 @endforeach
                 </div>

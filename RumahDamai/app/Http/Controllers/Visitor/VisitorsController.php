@@ -19,21 +19,31 @@ use App\Models\Program;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 
 class VisitorsController extends Controller
 {
     public function home()
     {
-        $carousel = CarouselItem::all();
-        $history = FoundationHistory::all();
-        $totalAnak = Anak::count();
-        $berita = Berita::all();
+        $response = Http::get("http://localhost:9001/api/carousel");
+        $carousel = $response->json();
+
+        $response = Http::get('http://localhost:9002/api/history');
+        $history = $response->json();
+
+        $response = Http::get("http://localhost:9003/api/category");
+        $category = $response->json();
+        
+        $response = Http::get("http://localhost:9004/api/news");
+        $berita = $response->json();
+
+
         $totalProgram = DetailProgram::count();
         $kategori = KategoriBerita::all();
         $anaktepi = AnakDisabilitas::count();
         $anakdisabilitas = AnakNonDisabilitas::count();
-        return view('visitor.home', compact('carousel','history','totalAnak','berita','totalProgram','kategori','anaktepi','anakdisabilitas'));
+        return view('visitor.home', compact('carousel','history','berita','totalProgram','category','anaktepi','anakdisabilitas'));
 
     }
 
@@ -60,24 +70,29 @@ class VisitorsController extends Controller
 
     public function news()
     {
-        $berita = Berita::all();
-        $kategori = KategoriBerita::all();
-        return view('visitor.berita', compact('berita','kategori'));
+        $response = Http::get("http://localhost:9003/api/category");
+        $category = $response->json();
+
+        $response = Http::get("http://localhost:9004/api/news");
+        $berita = $response->json();
+
+        return view('visitor.berita', compact('berita','category'));
     }
 
     public function show($id)
     {
-        // Mengambil data berita berdasarkan ID
-        $berita = Berita::find($id);
-        // Jika berita tidak ditemukan
-        if (!$berita) {
-            abort(404); // Mengembalikan response 404 Not Found
-        }
-        // Mengambil berita terbaru (kecuali berita utama yang sedang ditampilkan)
-        $recentNews = Berita::all();
-        $kategori = KategoriBerita::all();
+
+        $response = Http::get("http://localhost:9003/api/category");
+        $category = $response->json();
+
+        $response = Http::get("http://localhost:9004/api/news/{$id}");
+        $berita = $response->json();
+        
+        $response = Http::get("http://localhost:9004/api/news");
+        $recentNews = $response->json();
+
         // Mengirim data berita dan recent news ke halaman detail berita
-        return view('visitor.detailberita', compact('berita', 'recentNews','kategori'));
+        return view('visitor.detailberita', compact('berita', 'recentNews','category'));
     }
 
 
